@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Manager Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="brand">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>AssetVault</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li data-tab="assets">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Meus Ativos</span>
+                </li>
+                <li data-tab="transactions">
+                    <i class="fa-solid fa-list-ul"></i>
+                    <span>Transações</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="header-actions">
+                    <button id="btn-update-prices" class="btn btn-secondary">
+                        <i class="fa-solid fa-rotate"></i> Atualizar Preços
+                    </button>
+                    <button id="btn-add-transaction" class="btn btn-primary">
+                        <i class="fa-solid fa-plus"></i> Nova Transação
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <section id="view-dashboard" class="view active">
+                <div class="stats-grid">
+                    <div class="stat-card total-balance">
+                        <div class="icon-wrapper"><i class="fa-solid fa-sack-dollar"></i></div>
+                        <div class="stat-content">
+                            <h3>Patrimônio Total</h3>
+                            <p class="value" id="dash-total-balance">R$ 0,00</p>
+                        </div>
+                    </div>
+                    <div class="stat-card total-invested">
+                        <div class="icon-wrapper"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                        <div class="stat-content">
+                            <h3>Total Investido</h3>
+                            <p class="value" id="dash-invested">R$ 0,00</p>
+                        </div>
+                    </div>
+                    <div class="stat-card cash-balance">
+                        <div class="icon-wrapper"><i class="fa-solid fa-wallet"></i></div>
+                        <div class="stat-content">
+                            <h3>Saldo em Caixa</h3>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <p class="value" id="dash-cash">R$ 0,00</p>
+                                <button id="btn-edit-cash" class="btn btn-outline"
+                                    style="padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8rem;"
+                                    title="Editar Saldo">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card profit-loss">
+                        <div class="icon-wrapper"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                        <div class="stat-content">
+                            <h3>Lucro/Prejuízo</h3>
+                            <p class="value" id="dash-profit">R$ 0,00</p>
+                            <span class="badge" id="dash-profit-percent">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-split">
+                    <div class="chart-container card">
+                        <h3>Alocação de Ativos</h3>
+                        <div class="chart-wrapper">
+                            <!-- Simple CSS Pie Chart or Bar implementation will go here -->
+                            <div id="allocation-chart" class="allocation-bars"></div>
+                        </div>
+                    </div>
+                    <div class="top-assets card">
+                        <h3>Maiores Posições</h3>
+                        <ul id="top-assets-list" class="asset-list-mini">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Assets View -->
+            <section id="view-assets" class="view">
+                <div class="card full-width">
+                    <div class="table-header">
+                        <h3>Carteira Detalhada</h3>
+                        <button id="btn-add-asset" class="btn btn-sm btn-outline">
+                            <i class="fa-solid fa-plus"></i> Novo Ativo
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ativo</th>
+                                    <th>Tipo</th>
+                                    <th>Qtd.</th>
+                                    <th>Preço Médio</th>
+                                    <th>Preço Atual</th>
+                                    <th>Total</th>
+                                    <th>%</th>
+                                    <th>Lucro</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assets-table-body">
+                                <!-- JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions View -->
+            <section id="view-transactions" class="view">
+                <div class="card full-width">
+                    <div class="table-header">
+                        <h3>Histórico de Transações</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Ativo</th>
+                                    <th>Tipo</th>
+                                    <th>Qtd.</th>
+                                    <th>Preço Unit.</th>
+                                    <th>Total</th>
+                                    <th>Lucro/Prejuízo</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-table-body">
+                                <!-- JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+
+        <!-- Add Asset Modal -->
+        <div id="modal-asset" class="modal hidden">
+            <div class="modal-header">
+                <h2>Cadastrar Ativo</h2>
+                <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-asset">
+                <div class="form-group">
+                    <label>Símbolo/Ticker (ex: BTC, WEGE3)</label>
+                    <input type="text" name="symbol" required placeholder="BTC">
+                </div>
+                <div class="form-group">
+                    <label>Nome do Ativo</label>
+                    <input type="text" name="name" required placeholder="Bitcoin">
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select name="type">
+                        <option value="cripto">Criptomoeda</option>
+                        <option value="acao">Ação (BR)</option>
+                        <option value="fii">FII</option>
+                        <option value="us_stock">Stock (US)</option>
+                        <option value="renda_fixa">Renda Fixa</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Preço Atual (R$) - Inicial</label>
+                    <input type="number" name="current_price" step="0.01" required placeholder="0.00">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Add Transaction Modal -->
+        <div id="modal-transaction" class="modal hidden">
+            <div class="modal-header">
+                <h2>Nova Transação</h2>
+                <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-transaction">
+                <div class="form-group">
+                    <label>Ativo</label>
+                    <select name="asset_id" id="transaction-asset-select" required>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="type" value="buy" checked>
+                            <span class="radio-custom buy">Compra</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="type" value="sell">
+                            <span class="radio-custom sell">Venda</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Quantidade</label>
+                        <input type="number" name="quantity" step="any" required placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Preço Unitário (R$)</label>
+                        <input type="number" name="price" step="0.01" required placeholder="0.00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" name="date" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Registrar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Update Prices Modal -->
+        <div id="modal-prices" class="modal hidden">
+            <div class="modal-header">
+                <h2>Atualizar Cotações</h2>
+                <p class="subtitle">Como estamos offline, atualize os preços manualmente.</p>
+                <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-prices">
+                <div id="prices-list" class="scrollable-form-content">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Salvar Cotações</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Manage Cash Modal -->
+        <div id="modal-cash" class="modal hidden">
+            <div class="modal-header">
+                <h2>Gerenciar Caixa</h2>
+                <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-cash">
+                <p style="color:var(--text-muted); margin-bottom: 1rem;">Atualize o saldo disponível em conta/corretora
+                    para futuras operações.</p>
+                <div class="form-group">
+                    <label>Saldo Atual (R$)</label>
+                    <input type="number" name="cash_balance" step="0.01" required placeholder="0.00">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Salvar Saldo</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
