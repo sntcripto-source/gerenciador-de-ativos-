@@ -42,6 +42,11 @@
             <header class="top-header">
                 <h1 id="page-title">Dashboard</h1>
                 <div class="header-actions">
+                    <select id="currency-selector" class="btn btn-secondary"
+                        style="margin-right: 0.5rem; padding: 0.5rem 1rem; cursor: pointer;">
+                        <option value="BRL">Visualizar em R$ (BRL)</option>
+                        <option value="USD">Visualizar em $ (USD)</option>
+                    </select>
                     <button id="btn-update-prices" class="btn btn-secondary">
                         <i class="fa-solid fa-rotate"></i> Atualizar Preços
                     </button>
@@ -201,7 +206,14 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Preço Atual (R$) - Inicial</label>
+                    <label>Moeda</label>
+                    <select name="currency" id="asset-currency-select">
+                        <option value="BRL">Real Brasileiro (R$)</option>
+                        <option value="USD">Dólar Americano ($)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label id="price-label">Preço Atual (R$) - Inicial</label>
                     <input type="number" name="current_price" step="0.01" required placeholder="0.00">
                 </div>
                 <div class="modal-footer">

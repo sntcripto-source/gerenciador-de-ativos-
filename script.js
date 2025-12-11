@@ -3,6 +3,8 @@ const STATE = {
     assets: [],
     transactions: [],
     cash: 0,
+    usdRate: 5.00, // Taxa de câmbio USD/BRL (fixa)
+    displayCurrency: 'BRL', // Moeda de visualização: 'BRL' ou 'USD'
     currentView: 'dashboard'
 };
 
@@ -13,7 +15,9 @@ function saveState() {
     localStorage.setItem(DB_KEY, JSON.stringify({
         assets: STATE.assets,
         transactions: STATE.transactions,
-        cash: STATE.cash
+        cash: STATE.cash,
+        usdRate: STATE.usdRate,
+        displayCurrency: STATE.displayCurrency
     }));
 }
 
@@ -24,6 +28,8 @@ function loadState() {
         STATE.assets = parsed.assets || [];
         STATE.transactions = parsed.transactions || [];
         STATE.cash = parsed.cash || 0;
+        STATE.usdRate = parsed.usdRate || 5.00;
+        STATE.displayCurrency = parsed.displayCurrency || 'BRL';
     }
 }
 
@@ -90,6 +96,17 @@ function initModals() {
         document.querySelector('input[name="cash_balance"]').value = STATE.cash;
     });
 
+    // Currency Selector
+    const currencySelector = document.getElementById('currency-selector');
+    if (currencySelector) {
+        currencySelector.value = STATE.displayCurrency;
+        currencySelector.addEventListener('change', (e) => {
+            STATE.displayCurrency = e.target.value;
+            saveState();
+            renderAll();
+        });
+    }
+
     // Close Triggers
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', closeModal);
@@ -130,6 +147,7 @@ function initForms() {
             symbol: formData.get('symbol').toUpperCase(),
             name: formData.get('name'),
             type: formData.get('type'),
+            currency: formData.get('currency') || 'BRL',
             currentPrice: parseFloat(formData.get('current_price')),
             createdAt: new Date().toISOString()
         };
@@ -199,6 +217,16 @@ function initForms() {
         closeModal();
         renderAll();
     });
+
+    // Currency selection change - update price label
+    const currencySelect = document.getElementById('asset-currency-select');
+    if (currencySelect) {
+        currencySelect.addEventListener('change', (e) => {
+            const priceLabel = document.getElementById('price-label');
+            const symbol = e.target.value === 'USD' ? '$' : 'R$';
+            priceLabel.textContent = `Preço Atual (${symbol}) - Inicial`;
+        });
+    }
 }
 
 // Calculation Logic
@@ -241,30 +269,66 @@ function getPortfolioStats() {
         const holding = getAssetHolding(asset.id);
         if (holding.quantity > 0) {
             const currentValue = holding.quantity * asset.currentPrice;
-            totalInvested += holding.totalCost;
-            totalValue += currentValue;
+            const currentValueDisplay = convertToDisplayCurrency(currentValue, asset.currency);
+            const totalCostDisplay = convertToDisplayCurrency(holding.totalCost, asset.currency);
+
+            totalInvested += totalCostDisplay;
+            totalValue += currentValueDisplay;
 
             assetsData.push({
                 ...asset,
                 holding,
                 currentValue,
+                currentValueDisplay,
                 profit: currentValue - holding.totalCost,
                 profitPercent: holding.totalCost > 0 ? ((currentValue - holding.totalCost) / holding.totalCost) * 100 : 0
             });
         }
     });
 
-    const totalAssetsValue = totalValue; // Value of assets only
-    const totalNetWorth = totalAssetsValue + STATE.cash;
+    const totalAssetsValue = totalValue; // Value of assets in display currency
+    const cashDisplay = convertToDisplayCurrency(STATE.cash, 'BRL'); // Cash is always in BRL
+    const totalNetWorth = totalAssetsValue + cashDisplay;
 
     const totalProfit = totalValue - totalInvested;
     const totalProfitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
 
-    return { totalInvested, totalAssetsValue, totalNetWorth, totalProfit, totalProfitPercent, assetsData };
+    return { totalInvested, totalAssetsValue, totalNetWorth, totalProfit, totalProfitPercent, assetsData, cashDisplay };
 }
 
-function formatCurrency(val) {
+function formatCurrency(val, currency = 'BRL') {
+    if (currency === 'USD') {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    }
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+}
+
+function getCurrencySymbol(currency) {
+    return currency === 'USD' ? '$' : 'R$';
+}
+
+function convertToBRL(value, currency) {
+    if (currency === 'USD') {
+        return value * STATE.usdRate;
+    }
+    return value;
+}
+
+function convertToUSD(value, currency) {
+    if (currency === 'BRL') {
+        return value / STATE.usdRate;
+    }
+    return value;
+}
+
+function convertToDisplayCurrency(value, originalCurrency) {
+    // Converte valor da moeda original para a moeda de visualização
+    if (STATE.displayCurrency === 'BRL') {
+        return convertToBRL(value, originalCurrency);
+    } else if (STATE.displayCurrency === 'USD') {
+        return convertToUSD(value, originalCurrency);
+    }
+    return value;
 }
 
 // Rendering
@@ -277,14 +341,14 @@ function renderAll() {
 function renderDashboard() {
     const stats = getPortfolioStats();
 
-    document.getElementById('dash-total-balance').textContent = formatCurrency(stats.totalNetWorth);
-    document.getElementById('dash-invested').textContent = formatCurrency(stats.totalInvested);
-    document.getElementById('dash-cash').textContent = formatCurrency(STATE.cash);
+    document.getElementById('dash-total-balance').textContent = formatCurrency(stats.totalNetWorth, STATE.displayCurrency);
+    document.getElementById('dash-invested').textContent = formatCurrency(stats.totalInvested, STATE.displayCurrency);
+    document.getElementById('dash-cash').textContent = formatCurrency(stats.cashDisplay, STATE.displayCurrency);
 
     const profitEl = document.getElementById('dash-profit');
     const profitBadge = document.getElementById('dash-profit-percent');
 
-    profitEl.textContent = formatCurrency(stats.totalProfit);
+    profitEl.textContent = formatCurrency(stats.totalProfit, STATE.displayCurrency);
     profitBadge.textContent = `${stats.totalProfitPercent.toFixed(2)}%`;
 
     // Color coding
@@ -369,7 +433,7 @@ function renderAssetsTable() {
     stats.assetsData.forEach(item => {
         const tr = document.createElement('tr');
         const profitClass = item.profit >= 0 ? 'text-success' : 'text-danger';
-        const allocationPercent = stats.totalNetWorth > 0 ? (item.currentValue / stats.totalNetWorth) * 100 : 0;
+        const allocationPercent = stats.totalNetWorth > 0 ? (item.currentValueDisplay / stats.totalNetWorth) * 100 : 0;
 
         tr.innerHTML = `
             <td>
@@ -383,12 +447,12 @@ function renderAssetsTable() {
             </td>
             <td><span class="badge neutral">${item.type}</span></td>
             <td>${item.holding.quantity.toFixed(4)}</td>
-            <td>${formatCurrency(item.holding.avgPrice)}</td>
-            <td>${formatCurrency(item.currentPrice)}</td>
-            <td>${formatCurrency(item.currentValue)}</td>
+            <td>${formatCurrency(convertToDisplayCurrency(item.holding.avgPrice, item.currency), STATE.displayCurrency)}</td>
+            <td>${formatCurrency(convertToDisplayCurrency(item.currentPrice, item.currency), STATE.displayCurrency)}</td>
+            <td>${formatCurrency(item.currentValueDisplay, STATE.displayCurrency)}</td>
             <td>${allocationPercent.toFixed(1)}%</td>
             <td class="${profitClass}">
-                ${formatCurrency(item.profit)}<br>
+                ${formatCurrency(convertToDisplayCurrency(item.profit, item.currency), STATE.displayCurrency)}<br>
                 <small>${item.profitPercent.toFixed(2)}%</small>
             </td>
             <td>
@@ -466,26 +530,31 @@ function renderTransactionsTable() {
         const asset = STATE.assets.find(a => a.id === t.assetId);
         const tr = document.createElement('tr');
         const typeLabel = t.type === 'buy' ? '<span class="badge positive">Compra</span>' : '<span class="badge negative">Venda</span>';
+        const currency = asset ? (asset.currency || 'BRL') : 'BRL';
 
         let profitCell = '<span style="color:var(--text-muted)">-</span>';
         if (t.type === 'sell' && profits[t.id]) {
             const p = profits[t.id];
             const pClass = p.profit >= 0 ? 'text-success' : 'text-danger';
+            const profitDisplay = convertToDisplayCurrency(p.profit, currency);
             profitCell = `
                 <div class="${pClass}">
-                    ${formatCurrency(p.profit)}<br>
+                    ${formatCurrency(profitDisplay, STATE.displayCurrency)}<br>
                     <small>${p.profitPercent.toFixed(2)}%</small>
                 </div>
             `;
         }
+
+        const priceDisplay = convertToDisplayCurrency(t.price, currency);
+        const totalDisplay = convertToDisplayCurrency(t.total, currency);
 
         tr.innerHTML = `
             <td>${new Date(t.date).toLocaleDateString('pt-BR')}</td>
             <td>${asset ? asset.symbol : '---'}</td>
             <td>${typeLabel}</td>
             <td>${t.quantity}</td>
-            <td>${formatCurrency(t.price)}</td>
-            <td>${formatCurrency(t.total)}</td>
+            <td>${formatCurrency(priceDisplay, STATE.displayCurrency)}</td>
+            <td>${formatCurrency(totalDisplay, STATE.displayCurrency)}</td>
             <td>${profitCell}</td>
             <td>
                 <button class="btn-danger-icon" onclick="deleteTransaction('${t.id}')">
