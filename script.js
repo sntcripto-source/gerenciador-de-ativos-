@@ -675,9 +675,14 @@ function renderAssetsTable() {
                 <small>${item.profitPercent.toFixed(2)}%</small>
             </td>
             <td>
-                <button class="btn btn-sm btn-outline" onclick="openTransactionFor('${item.id}')">
-                    Negociar
-                </button>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-sm btn-outline" onclick="openTransactionFor('${item.id}')" title="Nova Transação">
+                        <i class="fa-solid fa-right-left"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="deleteAsset('${item.id}')" title="Excluir Ativo">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
@@ -695,6 +700,30 @@ window.openTransactionFor = function (assetId) {
     const select = document.getElementById('transaction-asset-select');
     select.value = assetId;
     document.querySelector('input[name="date"]').valueAsDate = new Date();
+}
+
+// Helper to delete asset
+window.deleteAsset = function (assetId) {
+    const asset = STATE.assets.find(a => a.id === assetId);
+    if (!asset) return;
+
+    if (confirm(`Tem certeza que deseja excluir o ativo "${asset.symbol}"?\n\nISSO APAGARÁ TODO O HISTÓRICO DE TRANSAÇÕES DELE!\n\nEssa ação não pode ser desfeita.`)) {
+        // Remove Transaction History
+        const initialTransCount = STATE.transactions.length;
+        STATE.transactions = STATE.transactions.filter(t => t.assetId !== assetId);
+        const transRemoved = initialTransCount - STATE.transactions.length;
+
+        // Remove Asset
+        STATE.assets = STATE.assets.filter(a => a.id !== assetId);
+
+        saveState();
+        renderAll();
+
+        // Use a small timeout to ensure UI updates before alert (sometimes alert blocks UI repaint)
+        setTimeout(() => {
+            alert(`Ativo "${asset.symbol}" excluído com sucesso.\n(${transRemoved} transações removidas)`);
+        }, 10);
+    }
 }
 
 // Helper to calculate realized profits for sales based on historical average cost
