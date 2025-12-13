@@ -23,48 +23,9 @@ async function saveState() {
 
     // Always save to localStorage as backup
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-
-    // Try to save to server if available
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-            console.warn('Servidor não disponível, dados salvos apenas no navegador');
-        } else {
-            console.log('Dados salvos no servidor e no navegador');
-        }
-    } catch (error) {
-        console.warn('Servidor não disponível, dados salvos apenas no navegador:', error.message);
-    }
 }
 
 async function loadState() {
-    // Try to load from server first
-    try {
-        const response = await fetch(API_URL);
-        if (response.ok) {
-            const data = await response.json();
-            // If empty object returned (first run), fallback to localStorage or empty
-            if (Object.keys(data).length > 0) {
-                STATE.assets = data.assets || [];
-                STATE.transactions = data.transactions || [];
-                STATE.cash = data.cash || 0;
-                STATE.usdRate = data.usdRate || 1.00;
-                STATE.displayCurrency = 'USD'; // Force Load as USD
-                console.log('Dados carregados do servidor (SAVE/data.json)');
-                return true; // Loaded from server
-            }
-        }
-    } catch (error) {
-        console.warn('Servidor não disponível, carregando do navegador');
-    }
-
     // Fallback to localStorage
     const localData = localStorage.getItem(STORAGE_KEY);
     if (localData) {
@@ -143,25 +104,6 @@ function initModals() {
         document.querySelector('input[name="cash_balance"]').value = STATE.cash;
     });
 
-    // Manual Save Button
-    document.getElementById('btn-save-data').addEventListener('click', async () => {
-        const btn = document.getElementById('btn-save-data');
-        const originalHTML = btn.innerHTML;
-
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
-
-        await saveState();
-
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Salvo!';
-        btn.style.backgroundColor = 'var(--success)';
-
-        setTimeout(() => {
-            btn.innerHTML = originalHTML;
-            btn.style.backgroundColor = '';
-            btn.disabled = false;
-        }, 2000);
-    });
 
     // Excel Export Button
     document.getElementById('btn-export-excel').addEventListener('click', exportToExcel);
